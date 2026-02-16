@@ -1,0 +1,35 @@
+# Documentation BasicAuth :
+# 1. Run :
+# sudo apt-get update && sudo apt-get install -y apache2-utils
+# htpasswd -nbB admin 'MONPASSWORD' > auth
+# 2. Create secret in Kubernetes with the content of the "auth" file generated in step 1 :
+# kubectl -n staging-db create secret generic phpmyadmin-basic-auth --from-file=auth
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: phpmyadmin-ingress
+  namespace: staging-db
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    # Basic auth
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: phpmyadmin-basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Authentication Required - phpMyAdmin"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - staging.phpmyadmin.aetherroyale.crzgames.com
+      secretName: letsencrypt-production
+  rules:
+    - host: staging.phpmyadmin.aetherroyale.crzgames.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: '/'
+            backend:
+              service:
+                name: phpmyadmin
+                port:
+                  number: 80
