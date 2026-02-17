@@ -23,7 +23,7 @@ spec:
           env:
             # phpMyAdmin utilisera ce host pour joindre MariaDB
             - name: PMA_HOST
-              value: mariadb.staging-db.svc
+              value: mariadb.staging-db.svc.cluster.local
             - name: PMA_PORT
               value: "3306"
             # Optionnel : limite upload
