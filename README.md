@@ -1,6 +1,6 @@
 # AetherRoyale – MariaDB / phpMyAdmin (Kubernetes)
 
-Déploiement de la base de données MariaDB pour les environnements Kubernetes du projet **Aether Royale**.
+Déploiement de MariaDB pour les environnements Kubernetes du projet **Aether Royale**.
 
 * Staging : MariaDB standalone (simple, léger, non HA)
 * Production : MariaDB HA (à prévoir)
@@ -43,8 +43,8 @@ Chaque dossier représente un environnement indépendant.
 
 * Cluster Kubernetes fonctionnel
 * Accès `kubectl` configuré
+* cert-manager installé (pour TLS)
 * Ingress Controller NGINX installé
-* cert-manager installé (TLS automatique)
 
 <br /><br />
 
@@ -54,10 +54,16 @@ Chaque dossier représente un environnement indépendant.
 
 # ⚙️ Configuration
 
-Éditer le fichier :
+Éditer le fichier correspondant à l’environnement :
 
 ```
 k8s/mariadb/staging/mariadb.yaml
+```
+
+ou
+
+```
+k8s/mariadb/production/mariadb.yaml
 ```
 
 Remplacer uniquement les valeurs sensibles dans le Secret :
@@ -74,7 +80,7 @@ Ne pas modifier :
 MARIADB_DATABASE
 ```
 
-(le nom de la base est volontairement fixé pour l’environnement staging)
+(le nom de la base est fixé par environnement)
 
 <br /><br />
 
@@ -84,9 +90,9 @@ MARIADB_DATABASE
 
 # 🔐 Secrets Kubernetes & Base64 (Important)
 
-Oui, Kubernetes demande du **base64 uniquement pour les objets `Secret`**.
+Kubernetes demande du **base64 uniquement pour les objets `Secret`** lorsque les valeurs sont écrites directement dans un fichier YAML.
 
-Ce n’est **PAS du chiffrement**, juste un encodage obligatoire dans les fichiers YAML.
+Ce n’est PAS du chiffrement, seulement un encodage.
 
 Exemple :
 
@@ -94,25 +100,23 @@ Exemple :
 testuser → dGVzdHVzZXI=
 ```
 
-### Encoder une valeur
+Encoder une valeur :
 
-#### Linux / Mac
+Linux / Mac :
 
 ```bash
 echo -n "monuser" | base64
 ```
 
-#### Windows (PowerShell)
+Windows (PowerShell) :
 
 ```powershell
 [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("monuser"))
 ```
 
-<br />
+Note importante :
 
-⚠️ Note importante :
-
-Quand tu fais :
+Si tu crées un secret avec :
 
 ```bash
 kubectl create secret generic ...
@@ -120,7 +124,7 @@ kubectl create secret generic ...
 
 Kubernetes encode automatiquement en base64 pour toi.
 
-Le base64 est nécessaire uniquement quand tu écris les valeurs directement dans un YAML comme ici.
+Le base64 est nécessaire uniquement quand tu écris les valeurs directement dans un YAML.
 
 <br /><br />
 
@@ -132,17 +136,32 @@ Le base64 est nécessaire uniquement quand tu écris les valeurs directement dan
 
 ## 🧪 Installation – Staging
 
-### 1) Déployer MariaDB
+Déployer MariaDB :
 
 ```bash
 kubectl apply -f k8s/mariadb/staging/mariadb.yaml
 ```
 
-### 2) Déployer phpMyAdmin
+Déployer phpMyAdmin :
 
 ```bash
 kubectl apply -f k8s/phpmyadmin/staging/phpmyadmin.yaml
 kubectl apply -f k8s/phpmyadmin/staging/phpmyadmin-ingress.yaml
+```
+
+## 🏭 Installation – Production
+
+Déployer MariaDB :
+
+```bash
+kubectl apply -f k8s/mariadb/production/mariadb.yaml
+```
+
+Déployer phpMyAdmin :
+
+```bash
+kubectl apply -f k8s/phpmyadmin/production/phpmyadmin.yaml
+kubectl apply -f k8s/phpmyadmin/production/phpmyadmin-ingress.yaml
 ```
 
 <br /><br />
@@ -153,10 +172,26 @@ kubectl apply -f k8s/phpmyadmin/staging/phpmyadmin-ingress.yaml
 
 # 📡 Accès MariaDB depuis le cluster
 
-Host interne Kubernetes :
+## Staging
+
+Host :
 
 ```
 mariadb.staging-db.svc.cluster.local
+```
+
+Port :
+
+```
+3306
+```
+
+## Production
+
+Host :
+
+```
+mariadb.production-db.svc.cluster.local
 ```
 
 Port :
@@ -173,12 +208,24 @@ Port :
 
 # 🔐 Variables d’environnement (backend)
 
+## Staging
+
 ```
 DB_HOST=mariadb.staging-db.svc.cluster.local
 DB_PORT=3306
 DB_USER=REPLACE_ME
 DB_PASSWORD=REPLACE_ME
 DB_DATABASE=aetherroyale_staging
+```
+
+## Production
+
+```
+DB_HOST=mariadb.production-db.svc.cluster.local
+DB_PORT=3306
+DB_USER=REPLACE_ME
+DB_PASSWORD=REPLACE_ME
+DB_DATABASE=aetherroyale_production
 ```
 
 <br /><br />
@@ -195,8 +242,6 @@ phpMyAdmin permet de :
 * Exécuter des requêtes SQL
 * Debug les données
 * Gérer les utilisateurs
-
-<br /><br />
 
 ## 🔒 Protection par BasicAuth
 
@@ -219,12 +264,18 @@ kubectl -n staging-db create secret generic phpmyadmin-basic-auth --from-file=au
 
 <br /><br />
 
-## Accès
+# Accès phpMyAdmin
 
-phpMyAdmin est accessible via l’Ingress sécurisé :
+## Staging
 
 ```
 https://staging.phpmyadmin.aetherroyale.crzgames.com
+```
+
+## Production
+
+```
+https://phpmyadmin.aetherroyale.crzgames.com
 ```
 
 Un login/mot de passe BasicAuth sera demandé avant l’accès.
@@ -237,15 +288,15 @@ Un login/mot de passe BasicAuth sera demandé avant l’accès.
 
 # 🧱 Notes Architecture
 
-### Staging
+## Staging
 
 * MariaDB standalone
 * 1 PVC de 10Go
-* 1 seule pod
 * Pas de haute disponibilité
+* 1 seule pod
 * phpMyAdmin exposé via Ingress sécurisé
 
-### Production (prévu)
+## Production
 
 * Réplication MariaDB
 * Sauvegardes automatiques
