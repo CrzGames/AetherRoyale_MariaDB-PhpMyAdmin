@@ -255,6 +255,7 @@ htpasswd -nbB admin 'MONPASSWORD' > auth
 Créer le secret Kubernetes :
 
 ```bash
+# modifier le namespace si besoin entre staging / prod
 kubectl -n staging-db create secret generic phpmyadmin-basic-auth --from-file=auth
 ```
 
