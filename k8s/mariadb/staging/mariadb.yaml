@@ -12,12 +12,9 @@ metadata:
   namespace: staging-db
 type: Opaque
 data:
-  # base64("testuser")
-  MARIADB_USER: dGVzdHVzZXI=
-  # base64("testpassword")
-  MARIADB_PASSWORD: dGVzdHBhc3N3b3Jk
-  # base64("rootpassword")
-  MARIADB_ROOT_PASSWORD: cm9vdHBhc3N3b3Jk
+  MARIADB_USER: REPLACE_ME_BASE64
+  MARIADB_PASSWORD: REPLACE_ME_BASE64
+  MARIADB_ROOT_PASSWORD: REPLACE_ME_BASE64
   # base64("aetherroyale_staging")
   MARIADB_DATABASE: YWV0aGVycm95YWxlX3N0YWdpbmc=
 
